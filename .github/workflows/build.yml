@@ -1,0 +1,51 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v2
+
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+
+    - name: Build APK with Gradle
+      run: ./gradlew assembleRelease
+      continue-on-error: true
+
+    - name: Build APK (Debug)
+      run: ./gradlew assembleDebug
+      if: failure()
+
+    - name: Upload APK (Release)
+      uses: actions/upload-artifact@v3
+      with:
+        name: facefusion-mobile-release.apk
+        path: app/build/outputs/apk/release/
+      if: success()
+
+    - name: Upload APK (Debug)
+      uses: actions/upload-artifact@v3
+      with:
+        name: facefusion-mobile-debug.apk
+        path: app/build/outputs/apk/debug/
+      if: always()
